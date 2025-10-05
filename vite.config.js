@@ -30,7 +30,7 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false
   },
-  server: {
+  server: { 
     host: true, // Listen on all addresses
     port: 5173
   }
