@@ -1,13 +1,23 @@
 <template>
   <div class="pose-detection">
     <h2>Тренер по отжиманиям</h2>
-    <div class="camera-section">
-      <video ref="videoElement" class="video" autoplay playsinline></video>
-      <canvas ref="canvasElement" class="overlay"></canvas>
+    <div class="camera-section" :class="{ 'camera-active': isCameraActive }">
+      <template v-if="isCameraActive">
+        <div class="camera-wrapper">
+          <video ref="videoElement" class="video" autoplay playsinline
+            :width="videoWidth" :height="videoHeight"
+            style="transform: scaleX(-1);"
+          ></video>
+          <canvas ref="canvasElement" class="overlay"
+            :width="videoWidth" :height="videoHeight"
+          ></canvas>
+          <!-- Non-mirrored HTML message (won't be flipped) -->
+          <div v-if="!lastDetection" class="camera-message">Встаньте в кадр</div>
+        </div>
+      </template>
     </div>
     <div class="controls">
-      <button @click="startCamera" :disabled="isCameraActive">Запустить камеру</button>
-      <button @click="stopCamera" :disabled="!isCameraActive">Остановить камеру</button>
+      <button @click="toggleCamera">{{ isCameraActive ? 'Остановить камеру' : 'Запустить камеру' }}</button>
       <button @click="resetCounter" class="reset-btn">Сбросить счетчик</button>
     </div>
     <div class="stats">
@@ -30,9 +40,9 @@
   </div>
 </template>
 
+
 <script>
-import { Pose } from "@mediapipe/pose";
-import { Camera } from "@mediapipe/camera_utils";
+import { PoseLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
 export default {
   name: 'PoseDetection',
@@ -45,147 +55,243 @@ export default {
       currentPhase: 'Готовность',
       showFormCorrection: false,
       formCorrections: [],
-      
-      // Pose detection variables
-      poseLandmarker: null,
-      camera: null,
-      lastPosture: 'up', // 'up' or 'down'
+      poseLandmarker: null, // MediaPipe Tasks PoseLandmarker
+      running: false,
+      video: null,
+      canvas: null,
+      canvasCtx: null,
+      drawingUtils: null,
+  offscreenCanvas: null,
+  offscreenCtx: null,
+      lastVideoTime: -1,
+      animationId: null,
+      videoWidth: 640,  // Увеличиваем для лучшего качества
+      videoHeight: 480, // Соотношение 4:3
+      lastPosture: 'up',
       minAngle: 90,
       maxAngle: 160,
-      isInPushupPosition: false
+      isInPushupPosition: false,
+      isProcessing: false // Prevent double activation
     }
   },
   methods: {
-    async startCamera() {
+
+    async toggleCamera() {
+      if (this.isCameraActive) {
+        this.stopCamera();
+      } else {
+        await this.startCamera();
+      }
+    },
+
+async startCamera() {
+  if (this.running) return;
+  console.log('[startCamera] Initializing...');
+  this.running = true;
+  this.feedbackMessage = 'Загрузка модели...';
+  this.feedbackClass = 'info';
+  try {
+    // Ensure video/canvas are rendered first
+    this.isCameraActive = true;
+    await this.$nextTick();
+
+    this.video = this.$refs.videoElement;
+    this.canvas = this.$refs.canvasElement;
+    if (!this.video || !this.canvas) {
+      throw new Error('Video or canvas element not found');
+    }
+    this.canvasCtx = this.canvas.getContext('2d');
+    this.drawingUtils = new DrawingUtils(this.canvasCtx);
+
+    // Initialize poseLandmarker first
+    if (this.poseLandmarker) {
+      this.poseLandmarker.close && this.poseLandmarker.close();
+      this.poseLandmarker = null;
+    }
+
+    const vision = await FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
+    );
+    console.log('[startCamera] Creating poseLandmarker...');
+    this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath:
+          'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+        delegate: 'GPU',
+      },
+      runningMode: 'VIDEO',
+      numPoses: 1,
+    });
+    console.log('[startCamera] poseLandmarker created successfully');
+
+    // Then start camera
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: this.videoWidth },
+        height: { ideal: this.videoHeight },
+        facingMode: 'user'  // Использовать переднюю камеру
+      }
+    });
+    this.video.srcObject = stream;
+    await this.video.play();
+
+    // Wait for video to be ready
+    await new Promise(resolve => {
+      if (this.video.readyState >= 2) resolve();
+      else this.video.onloadeddata = resolve;
+    });
+
+  // Set final dimensions (use actual video pixel size)
+  const vw = this.video.videoWidth || 640;
+  const vh = this.video.videoHeight || 480;
+  this.videoWidth = vw;
+  this.videoHeight = vh;
+  this.video.width = this.videoWidth;
+  this.video.height = this.videoHeight;
+  // set canvas internal pixel size to video pixels
+  this.canvas.width = vw;
+  this.canvas.height = vh;
+  // make canvas display size match element's client size to avoid CSS scaling
+  this.canvas.style.width = this.video.clientWidth + 'px';
+  this.canvas.style.height = this.video.clientHeight + 'px';
+  console.log('[startCamera] Dimensions set:', vw, 'x', vh, 'display:', this.video.clientWidth, 'x', this.video.clientHeight);
+
+    this.feedbackMessage = 'Камера активна. Встаньте в положение для отжиманий.';
+    this.feedbackClass = 'success';
+    this.lastVideoTime = -1;
+    console.log('[startCamera] Starting detection...');
+    this.predictWebcam();
+  } catch (error) {
+    this.isCameraActive = false;
+    this.feedbackMessage = 'Ошибка доступа к камере: ' + (error.message || error);
+    this.feedbackClass = 'error';
+    this.running = false;
+    console.error('[startCamera] Error:', error);
+  }
+},
+
+    stopCamera() {
+      this.isCameraActive = false;
+      this.running = false;
+      if (this.animationId) {
+        cancelAnimationFrame(this.animationId);
+        this.animationId = null;
+      }
+      if (this.video && this.video.srcObject) {
+        const tracks = this.video.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
+        this.video.srcObject = null;
+      }
+      if (this.canvasCtx) {
+        this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+      // Не сбрасываем размеры, просто скрываем canvas через v-if
+      this.feedbackMessage = 'Камера остановлена';
+      this.feedbackClass = 'info';
+      this.currentPhase = 'Готовность';
+      this.showFormCorrection = false;
+    },
+
+    async predictWebcam() {
+      console.log('[predictWebcam] called. running:', this.running, 'isCameraActive:', this.isCameraActive);
+      if (!this.running || !this.isCameraActive) {
+        console.warn('[predictWebcam] Not running or camera inactive');
+        return;
+      }
+      if (!this.video) {
+        console.warn('[predictWebcam] Video ref missing');
+        this.animationId = requestAnimationFrame(this.predictWebcam);
+        return;
+      }
+      console.log('[predictWebcam] video.paused:', this.video.paused, 'video.ended:', this.video.ended, 'video.readyState:', this.video.readyState, 'video.currentTime:', this.video.currentTime);
+      // ТЕСТ: убираем проверку currentTime, всегда вызываем detectForVideo
+      if (!this.poseLandmarker) {
+        console.warn('[predictWebcam] poseLandmarker is null');
+        this.animationId = requestAnimationFrame(this.predictWebcam);
+        return;
+      }
+
+      // Try video-mode API first, fallback to image-mode if it fails
       try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          this.feedbackMessage = 'Ваш браузер не поддерживает доступ к камере';
-          this.feedbackClass = 'error';
+        if (typeof this.poseLandmarker.detectForVideo === 'function') {
+          console.log('[predictWebcam] using detectForVideo');
+          this.lastVideoTime = this.video.currentTime;
+          this.poseLandmarker.detectForVideo(this.video, performance.now(), (result) => {
+            try { this.drawResults(result); } catch (e) { console.error('[predictWebcam] drawResults error:', e); }
+            if (result && result.landmarks && result.landmarks.length > 0) {
+              this.lastDetection = true;
+              this.analyzePose(result.landmarks[0]);
+            } else {
+              this.lastDetection = false;
+            }
+            this.animationId = requestAnimationFrame(this.predictWebcam);
+          });
           return;
         }
-
-        // Initialize PoseLandmarker
-        await this.initializePoseLandmarker();
-        
-        // Start camera
-        const videoElement = this.$refs.videoElement;
-        const canvasElement = this.$refs.canvasElement;
-        const canvasCtx = canvasElement.getContext('2d');
-
-        this.camera = new Camera(videoElement, {
-          onFrame: async () => {
-            await this.poseLandmarker.send({ image: videoElement });
-          },
-          width: 640,
-          height: 480
-        });
-
-        await this.camera.start();
-        this.isCameraActive = true;
-        this.feedbackMessage = 'Камера активна. Встаньте в положение для отжиманий.';
-        this.feedbackClass = 'success';
-
-      } catch (error) {
-        console.error('Error starting camera:', error);
-        this.feedbackMessage = 'Ошибка доступа к камере: ' + error.message;
-        this.feedbackClass = 'error';
+      } catch (err) {
+        console.warn('[predictWebcam] detectForVideo failed, will fallback to image detect:', err.message || err);
       }
-    },
 
-    async initializePoseLandmarker() {
-      this.poseLandmarker = new Pose({
-        locateFile: (file) => {
-          return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+      // Fallback: draw current video frame into offscreen canvas and run detect(image)
+      try {
+        if (!this.offscreenCanvas) {
+          this.offscreenCanvas = document.createElement('canvas');
+          this.offscreenCtx = this.offscreenCanvas.getContext('2d');
         }
-      });
-
-      this.poseLandmarker.setOptions({
-        modelComplexity: 1,
-        smoothLandmarks: true,
-        enableSegmentation: false,
-        smoothSegmentation: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-      });
-
-      this.poseLandmarker.onResults(this.onPoseResults);
-    },
-
-    onPoseResults(results) {
-      const canvasElement = this.$refs.canvasElement;
-      const canvasCtx = canvasElement.getContext('2d');
-      
-      // Set canvas dimensions to match video
-      canvasElement.width = this.$refs.videoElement.videoWidth;
-      canvasElement.height = this.$refs.videoElement.videoHeight;
-      
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-      
-      if (results.poseLandmarks) {
-        this.drawLandmarks(canvasCtx, results.poseLandmarks);
-        this.analyzePose(results.poseLandmarks);
-      }
-      
-      canvasCtx.restore();
-    },
-
-    drawLandmarks(ctx, landmarks) {
-      ctx.fillStyle = '#00FF00';
-      ctx.strokeStyle = '#00FF00';
-      ctx.lineWidth = 2;
-
-      // Draw key points for push-up analysis
-      const keyPoints = [
-        11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28 // shoulders, elbows, wrists, hips, knees, ankles
-      ];
-
-      keyPoints.forEach(index => {
-        const landmark = landmarks[index];
-        if (landmark) {
-          ctx.beginPath();
-          ctx.arc(landmark.x * ctx.canvas.width, landmark.y * ctx.canvas.height, 4, 0, 2 * Math.PI);
-          ctx.fill();
-        }
-      });
-
-      // Draw lines for body skeleton
-      this.drawSkeleton(ctx, landmarks);
-    },
-
-    drawSkeleton(ctx, landmarks) {
-      // Full MediaPipe Pose connections (33 landmarks)
-      const connections = [
-        [0,1],[1,2],[2,3],[3,7], // Nose to left eye/ear
-        [0,4],[4,5],[5,6],[6,8], // Nose to right eye/ear
-        [9,10], // Mouth
-        [11,12], // Shoulders
-        [11,13],[13,15],[15,17],[15,19],[15,21], // Left arm
-        [17,19],[12,14],[14,16],[16,18],[16,20],[16,22],[18,20], // Right arm
-        [11,23],[12,24], // Shoulders to hips
-        [23,24], // Hips
-        [23,25],[25,27],[27,29],[29,31], // Left leg
-        [27,31],[24,26],[26,28],[28,30],[30,32],[28,32] // Right leg
-      ];
-
-      connections.forEach(([start, end]) => {
-        const startLandmark = landmarks[start];
-        const endLandmark = landmarks[end];
-        if (startLandmark && endLandmark) {
-          ctx.beginPath();
-          ctx.moveTo(startLandmark.x * ctx.canvas.width, startLandmark.y * ctx.canvas.height);
-          ctx.lineTo(endLandmark.x * ctx.canvas.width, endLandmark.y * ctx.canvas.height);
-          ctx.stroke();
+        this.offscreenCanvas.width = this.videoWidth;
+        this.offscreenCanvas.height = this.videoHeight;
+  // Use actual video pixel size to match canvas
+  const vw = this.video.videoWidth || this.videoWidth;
+  const vh = this.video.videoHeight || this.videoHeight;
+  this.offscreenCanvas.width = vw;
+  this.offscreenCanvas.height = vh;
+  this.offscreenCtx.drawImage(this.video, 0, 0, vw, vh);
+        // Some API versions accept HTMLCanvasElement directly
+        const imageForDetect = this.offscreenCanvas;
+        const result = await this.poseLandmarker.detect(imageForDetect);
+        if (result && result.landmarks && result.landmarks.length > 0) {
+          this.lastDetection = true;
+          this.drawResults(result);
+          this.analyzePose(result.landmarks[0]);
         } else {
-          // Debug: log missing landmarks
-          if (!startLandmark || !endLandmark) {
-            // Uncomment for debugging:
-            // console.log(`Missing landmark(s): ${start} or ${end}`);
-          }
+          this.lastDetection = false;
+          this.drawResults(result);
         }
-      });
+      } catch (err) {
+        console.error('[predictWebcam] image-mode detect failed:', err);
+      }
+      this.animationId = requestAnimationFrame(this.predictWebcam);
     },
+
+    drawResults(result) {
+      this.canvasCtx.save();
+      // Clear drawing area
+      this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      console.log('[drawResults] canvas size:', this.canvas.width, this.canvas.height);
+      if (result && result.landmarks && result.landmarks.length > 0) {
+        // Mirror landmarks in X to match mirrored video display
+        const mirrored = result.landmarks.map(landmarkSet => landmarkSet.map(p => ({ x: 1 - p.x, y: p.y, z: p.z })));
+        // Draw first pose
+        const first = mirrored[0][0];
+        if (first) {
+          this.canvasCtx.beginPath();
+          this.canvasCtx.arc(first.x * this.canvas.width, first.y * this.canvas.height, 8, 0, 2 * Math.PI);
+          this.canvasCtx.fillStyle = 'red';
+          this.canvasCtx.fill();
+          console.log('[drawResults] drew nose dot at', first.x * this.canvas.width, first.y * this.canvas.height);
+        }
+        for (const lm of mirrored) {
+          this.drawingUtils.drawLandmarks(lm, { radius: 4 });
+          this.drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS);
+        }
+        console.log('[drawResults] drew pose landmarks and connectors');
+      } else {
+        // No canvas text; HTML message shows 'Встаньте в кадр'
+        this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+      this.canvasCtx.restore();
+    },
+
 
     analyzePose(landmarks) {
       this.formCorrections = [];
@@ -308,19 +414,7 @@ export default {
       return 'info';
     },
 
-    stopCamera() {
-      if (this.camera) {
-        this.camera.stop();
-      }
-      if (this.poseLandmarker) {
-        this.poseLandmarker.close();
-      }
-      this.isCameraActive = false;
-      this.feedbackMessage = 'Камера остановлена';
-      this.feedbackClass = 'info';
-      this.currentPhase = 'Готовность';
-      this.showFormCorrection = false;
-    },
+  // stopCamera is now above, using new logic
 
     resetCounter() {
       this.repetitionCount = 0;
@@ -342,28 +436,45 @@ export default {
   text-align: center;
 }
 
-.camera-section {
+     .camera-section {
   position: relative;
   width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
+  max-width: 720px;
+  height: auto;
+  margin: 0 auto 1rem;
   border: 2px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
-}
-
-.video, .overlay {
-  width: 100%;
-  height: auto;
   display: block;
-}
-
-.overlay {
+     }
+     
+     .video, .overlay {
+       width: 100%;
+       height: auto;
+       display: block;
+       max-width: 100%;
+       object-fit: contain;
+     }
+     .overlay {
   position: absolute;
   top: 0;
   left: 0;
   pointer-events: none;
 }
+
+    .camera-wrapper { position: relative; width: 100%; }
+    .camera-message {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      z-index: 30;
+      font-weight: bold;
+    }
 
 .controls {
   margin: 1rem 0;
@@ -475,19 +586,15 @@ button:disabled {
   border-left: 4px solid #1565c0;
 }
 
-@media (max-width: 768px) {
-  .camera-section {
-    max-width: 100%;
-  }
-  
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  button {
-    margin: 0;
-  }
-}
+     @media (max-width: 768px) {
+       .camera-section {
+         margin: 0 0 1rem 0;
+         border: none;
+         border-radius: 0;
+       }
+       .controls { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem; }
+       button { margin: 0; }
+       .stats { padding: 0.75rem; }
+       .video { max-height: 50vh; }
+    }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div class="text-section">
-    <h2>Техника выполнения отжиманий</h2>
+    <h2>tl;dw</h2>
     <div class="description">
       <h3>Важные моменты:</h3>
       <ul>

@@ -1,12 +1,12 @@
 <template>
   <div class="video-section">
-    <h2>Обучение отжиманиям</h2>
+    <h2>Видеоурок</h2>
     <div class="video-container">
       <iframe 
         width="560" 
         height="315" 
         src="https://rutube.ru/play/embed/ff46fa6927f5d532de1429dee83d3273/" 
-        title="Отжимания обучение"
+        title="Обучение"
         frameborder="0" 
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
         allowfullscreen>
