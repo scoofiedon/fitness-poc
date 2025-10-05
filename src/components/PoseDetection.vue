@@ -155,20 +155,34 @@ export default {
     },
 
     drawSkeleton(ctx, landmarks) {
+      // Full MediaPipe Pose connections (33 landmarks)
       const connections = [
-        [11, 12], [11, 13], [13, 15], [12, 14], [14, 16], // Arms
-        [11, 23], [12, 24], [23, 24], [23, 25], [24, 26], [25, 27], [26, 28] // Body and legs
+        [0,1],[1,2],[2,3],[3,7], // Nose to left eye/ear
+        [0,4],[4,5],[5,6],[6,8], // Nose to right eye/ear
+        [9,10], // Mouth
+        [11,12], // Shoulders
+        [11,13],[13,15],[15,17],[15,19],[15,21], // Left arm
+        [17,19],[12,14],[14,16],[16,18],[16,20],[16,22],[18,20], // Right arm
+        [11,23],[12,24], // Shoulders to hips
+        [23,24], // Hips
+        [23,25],[25,27],[27,29],[29,31], // Left leg
+        [27,31],[24,26],[26,28],[28,30],[30,32],[28,32] // Right leg
       ];
 
       connections.forEach(([start, end]) => {
         const startLandmark = landmarks[start];
         const endLandmark = landmarks[end];
-        
         if (startLandmark && endLandmark) {
           ctx.beginPath();
           ctx.moveTo(startLandmark.x * ctx.canvas.width, startLandmark.y * ctx.canvas.height);
           ctx.lineTo(endLandmark.x * ctx.canvas.width, endLandmark.y * ctx.canvas.height);
           ctx.stroke();
+        } else {
+          // Debug: log missing landmarks
+          if (!startLandmark || !endLandmark) {
+            // Uncomment for debugging:
+            // console.log(`Missing landmark(s): ${start} or ${end}`);
+          }
         }
       });
     },
