@@ -31,7 +31,7 @@
 </template>
 
 <script>
-import { PoseLandmarker } from "@mediapipe/pose";
+import { Pose } from "@mediapipe/pose";
 import { Camera } from "@mediapipe/camera_utils";
 
 export default {
@@ -93,7 +93,7 @@ export default {
     },
 
     async initializePoseLandmarker() {
-      this.poseLandmarker = new PoseLandmarker({
+      this.poseLandmarker = new Pose({
         locateFile: (file) => {
           return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
         }
