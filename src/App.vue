@@ -2,7 +2,7 @@
   <div id="app">
     <header class="app-header">
       <h1>💪 Тренер: Отжимания</h1>
-      <p>Proof of Concept</p>
+      <p>Proof of concept for an automated hockey coaching app</p>
     </header>
     
     <main class="app-main">
