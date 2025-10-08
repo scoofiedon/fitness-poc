@@ -1,6 +1,6 @@
 <template>
-  <div class="pose-detection">
-    <h2>Тренер по отжиманиям</h2>
+  <div v-if="exerciseData" class="pose-detection">
+    <h2>Тренер по {{ exerciseName }}</h2>
     <div class="camera-section" :class="{ 'camera-active': isCameraActive }">
       <template v-if="isCameraActive">
         <div class="camera-wrapper">
@@ -38,403 +38,276 @@
       </div>
     </div>
   </div>
+  <div v-else class="loading-placeholder">
+    <p>Загрузка тренажера...</p>
+  </div>
 </template>
 
 
 <script>
-import { PoseLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
+import { PoseLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision"
+import { ExerciseLogicFactory } from "../exercise-logic/ExerciseLogicFactory.js"
 
 export default {
   name: 'PoseDetection',
+  props: {
+    exerciseData: {
+      type: Object,
+      required: true
+    },
+    exerciseName: {
+      type: String,
+      required: true
+    }
+  },
   data() {
     return {
       isCameraActive: false,
-      repetitionCount: 0,
-      feedbackMessage: 'Запустите камеру для начала тренировки',
-      feedbackClass: 'info',
-      currentPhase: 'Готовность',
-      showFormCorrection: false,
-      formCorrections: [],
-      poseLandmarker: null, // MediaPipe Tasks PoseLandmarker
+      exerciseLogic: null,
+      poseLandmarker: null,
       running: false,
       video: null,
       canvas: null,
       canvasCtx: null,
       drawingUtils: null,
-  offscreenCanvas: null,
-  offscreenCtx: null,
+      offscreenCanvas: null,
+      offscreenCtx: null,
       lastVideoTime: -1,
       animationId: null,
-      videoWidth: 640,  // Увеличиваем для лучшего качества
-      videoHeight: 480, // Соотношение 4:3
-      lastPosture: 'up',
-      minAngle: 90,
-      maxAngle: 160,
-      isInPushupPosition: false,
-      isProcessing: false // Prevent double activation
+      videoWidth: 640,
+      videoHeight: 480,
+      lastDetection: false
+    }
+  },
+  computed: {
+    repetitionCount() {
+      return this.exerciseLogic ? this.exerciseLogic.repetitionCount : 0
+    },
+    currentPhase() {
+      return this.exerciseLogic ? this.exerciseLogic.currentPhase : 'Готовность'
+    },
+    feedbackMessage() {
+      return this.exerciseLogic ? this.exerciseLogic.feedbackMessage : 'Запустите камеру для начала тренировки'
+    },
+    feedbackClass() {
+      return this.exerciseLogic ? this.exerciseLogic.feedbackClass : 'info'
+    },
+    formCorrections() {
+      return this.exerciseLogic ? this.exerciseLogic.formCorrections : []
+    },
+    showFormCorrection() {
+      return this.exerciseLogic ? this.exerciseLogic.showFormCorrection : false
     }
   },
   methods: {
 
     async toggleCamera() {
       if (this.isCameraActive) {
-        this.stopCamera();
+        this.stopCamera()
       } else {
-        await this.startCamera();
+        await this.startCamera()
       }
     },
 
-async startCamera() {
-  this.resetCounter();
-  if (this.running) return;
-  // console.log('[startCamera] Initializing...');
-  this.running = true;
-  this.feedbackMessage = 'Загрузка модели...';
-  this.feedbackClass = 'info';
-  try {
-    // Ensure video/canvas are rendered first
-    this.isCameraActive = true;
-    await this.$nextTick();
+    async startCamera() {
+      this.resetCounter()
+      if (this.running) return
+      
+      this.running = true
+      this.feedbackMessage = 'Загрузка модели...'
+      this.feedbackClass = 'info'
+      
+      try {
+        // Initialize exercise logic
+        const exerciseType = this.exerciseData.exerciseType || 'pushups'
+        this.exerciseLogic = ExerciseLogicFactory.createLogic(exerciseType, this.exerciseData)
+        
+        // Ensure video/canvas are rendered first
+        this.isCameraActive = true
+        await this.$nextTick()
 
-    this.video = this.$refs.videoElement;
-    this.canvas = this.$refs.canvasElement;
-    if (!this.video || !this.canvas) {
-      throw new Error('Video or canvas element not found');
-    }
-    this.canvasCtx = this.canvas.getContext('2d');
-    this.drawingUtils = new DrawingUtils(this.canvasCtx);
+        this.video = this.$refs.videoElement
+        this.canvas = this.$refs.canvasElement
+        if (!this.video || !this.canvas) {
+          throw new Error('Video or canvas element not found')
+        }
+        this.canvasCtx = this.canvas.getContext('2d')
+        this.drawingUtils = new DrawingUtils(this.canvasCtx)
 
-    // Initialize poseLandmarker first
-    if (this.poseLandmarker) {
-      this.poseLandmarker.close && this.poseLandmarker.close();
-      this.poseLandmarker = null;
-    }
+        // Initialize poseLandmarker
+        if (this.poseLandmarker) {
+          this.poseLandmarker.close && this.poseLandmarker.close()
+          this.poseLandmarker = null
+        }
 
-    const vision = await FilesetResolver.forVisionTasks(
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
-    );
-    // console.log('[startCamera] Creating poseLandmarker...');
-    this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath:
-          'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
-        delegate: 'GPU',
-      },
-      runningMode: 'VIDEO',
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.9,
-      minPosePresenceConfidence: 0.8,
-      minTrackingConfidence: 0.8
-    });
-    // console.log('[startCamera] poseLandmarker created successfully');
+        const vision = await FilesetResolver.forVisionTasks(
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
+        )
+        
+        this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.9,
+          minPosePresenceConfidence: 0.8,
+          minTrackingConfidence: 0.8
+        })
 
-    // Then start camera
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: this.videoWidth },
-        height: { ideal: this.videoHeight },
-        facingMode: 'user'  // Использовать переднюю камеру
+        // Start camera
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: this.videoWidth },
+            height: { ideal: this.videoHeight },
+            facingMode: 'user'
+          }
+        })
+        this.video.srcObject = stream
+        await this.video.play()
+
+        // Wait for video to be ready
+        await new Promise(resolve => {
+          if (this.video.readyState >= 2) resolve()
+          else this.video.onloadeddata = resolve
+        })
+
+        // Set final dimensions
+        const vw = this.video.videoWidth || 640
+        const vh = this.video.videoHeight || 480
+        this.videoWidth = vw
+        this.videoHeight = vh
+        this.video.width = this.videoWidth
+        this.video.height = this.videoHeight
+        this.canvas.width = vw
+        this.canvas.height = vh
+        this.canvas.style.width = this.video.clientWidth + 'px'
+        this.canvas.style.height = this.video.clientHeight + 'px'
+
+        this.feedbackMessage = 'Камера активна. Встаньте в положение для упражнения.'
+        this.feedbackClass = 'success'
+        this.lastVideoTime = -1
+        this.predictWebcam()
+      } catch (error) {
+        this.isCameraActive = false
+        this.feedbackMessage = 'Ошибка доступа к камере: ' + (error.message || error)
+        this.feedbackClass = 'error'
+        this.running = false
+        console.error('[startCamera] Error:', error)
       }
-    });
-    this.video.srcObject = stream;
-    await this.video.play();
-
-    // Wait for video to be ready
-    await new Promise(resolve => {
-      if (this.video.readyState >= 2) resolve();
-      else this.video.onloadeddata = resolve;
-    });
-
-  // Set final dimensions (use actual video pixel size)
-  const vw = this.video.videoWidth || 640;
-  const vh = this.video.videoHeight || 480;
-  this.videoWidth = vw;
-  this.videoHeight = vh;
-  this.video.width = this.videoWidth;
-  this.video.height = this.videoHeight;
-  // set canvas internal pixel size to video pixels
-  this.canvas.width = vw;
-  this.canvas.height = vh;
-  // make canvas display size match element's client size to avoid CSS scaling
-  this.canvas.style.width = this.video.clientWidth + 'px';
-  this.canvas.style.height = this.video.clientHeight + 'px';
-  // console.log('[startCamera] Dimensions set:', vw, 'x', vh, 'display:', this.video.clientWidth, 'x', this.video.clientHeight);
-
-    this.feedbackMessage = 'Камера активна. Встаньте в положение для отжиманий.';
-    this.feedbackClass = 'success';
-    this.lastVideoTime = -1;
-    // console.log('[startCamera] Starting detection...');
-    this.predictWebcam();
-  } catch (error) {
-    this.isCameraActive = false;
-    this.feedbackMessage = 'Ошибка доступа к камере: ' + (error.message || error);
-    this.feedbackClass = 'error';
-    this.running = false;
-    console.error('[startCamera] Error:', error);
-  }
-},
+    },
 
     stopCamera() {
-      this.isCameraActive = false;
-      this.running = false;
+      this.isCameraActive = false
+      this.running = false
       if (this.animationId) {
-        cancelAnimationFrame(this.animationId);
-        this.animationId = null;
+        cancelAnimationFrame(this.animationId)
+        this.animationId = null
       }
       if (this.video && this.video.srcObject) {
-        const tracks = this.video.srcObject.getTracks();
-        tracks.forEach((track) => track.stop());
-        this.video.srcObject = null;
+        const tracks = this.video.srcObject.getTracks()
+        tracks.forEach((track) => track.stop())
+        this.video.srcObject = null
       }
       if (this.canvasCtx) {
-        this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height)
       }
-      // Не сбрасываем размеры, просто скрываем canvas через v-if
-      this.feedbackMessage = 'Камера остановлена';
-      this.feedbackClass = 'info';
-      this.currentPhase = 'Готовность';
-      this.showFormCorrection = false;
+      this.feedbackMessage = 'Камера остановлена'
+      this.feedbackClass = 'info'
+      this.currentPhase = 'Готовность'
+      this.showFormCorrection = false
     },
 
     async predictWebcam() {
-      // console.log('[predictWebcam] called. running:', this.running, 'isCameraActive:', this.isCameraActive);
       if (!this.running || !this.isCameraActive) {
-        console.warn('[predictWebcam] Not running or camera inactive');
-        return;
+        console.warn('[predictWebcam] Not running or camera inactive')
+        return
       }
       if (!this.video) {
-        console.warn('[predictWebcam] Video ref missing');
-        this.animationId = requestAnimationFrame(this.predictWebcam);
-        return;
+        console.warn('[predictWebcam] Video ref missing')
+        this.animationId = requestAnimationFrame(this.predictWebcam)
+        return
       }
-      // console.log('[predictWebcam] video.paused:', this.video.paused, 'video.ended:', this.video.ended, 'video.readyState:', this.video.readyState, 'video.currentTime:', this.video.currentTime);
-      // ТЕСТ: убираем проверку currentTime, всегда вызываем detectForVideo
       if (!this.poseLandmarker) {
-        console.warn('[predictWebcam] poseLandmarker is null');
-        this.animationId = requestAnimationFrame(this.predictWebcam);
-        return;
+        console.warn('[predictWebcam] poseLandmarker is null')
+        this.animationId = requestAnimationFrame(this.predictWebcam)
+        return
       }
 
-      // Try video-mode API first, fallback to image-mode if it fails
-      // try {
-      //   if (typeof this.poseLandmarker.detectForVideo === 'function') {
-      //     // console.log('[predictWebcam] using detectForVideo');
-      //     this.lastVideoTime = this.video.currentTime;
-      //     this.poseLandmarker.detectForVideo(this.video, performance.now(), (result) => {
-      //       try { this.drawResults(result); } catch (e) { console.error('[predictWebcam] drawResults error:', e); }
-      //       if (result && result.landmarks && result.landmarks.length > 0) {
-      //         this.lastDetection = true;
-      //         this.analyzePose(result.landmarks[0]);
-      //       } else {
-      //         this.lastDetection = false;
-      //       }
-      //       this.animationId = requestAnimationFrame(this.predictWebcam);
-      //     });
-      //     return;
-      //   }
-      // } catch (err) {
-      //   console.warn('[predictWebcam] detectForVideo failed, will fallback to image detect:', err.message || err);
-      // }
-
-      // Fallback: draw current video frame into offscreen canvas and run detect(image)
       try {
         if (!this.offscreenCanvas) {
-          this.offscreenCanvas = document.createElement('canvas');
-          this.offscreenCtx = this.offscreenCanvas.getContext('2d');
+          this.offscreenCanvas = document.createElement('canvas')
+          this.offscreenCtx = this.offscreenCanvas.getContext('2d')
         }
-        this.offscreenCanvas.width = this.videoWidth;
-        this.offscreenCanvas.height = this.videoHeight;
-  // Use actual video pixel size to match canvas
-  const vw = this.video.videoWidth || this.videoWidth;
-  const vh = this.video.videoHeight || this.videoHeight;
-  this.offscreenCanvas.width = vw;
-  this.offscreenCanvas.height = vh;
-  this.offscreenCtx.drawImage(this.video, 0, 0, vw, vh);
-        // Some API versions accept HTMLCanvasElement directly
-        const imageForDetect = this.offscreenCanvas;
-        const result = await this.poseLandmarker.detect(imageForDetect);
+        this.offscreenCanvas.width = this.videoWidth
+        this.offscreenCanvas.height = this.videoHeight
+        
+        const vw = this.video.videoWidth || this.videoWidth
+        const vh = this.video.videoHeight || this.videoHeight
+        this.offscreenCanvas.width = vw
+        this.offscreenCanvas.height = vh
+        this.offscreenCtx.drawImage(this.video, 0, 0, vw, vh)
+        
+        const imageForDetect = this.offscreenCanvas
+        const result = await this.poseLandmarker.detect(imageForDetect)
         if (result && result.landmarks && result.landmarks.length > 0) {
-          this.lastDetection = true;
-          this.drawResults(result);
-          this.analyzePose(result.landmarks[0]);
+          this.lastDetection = true
+          this.drawResults(result)
+          this.analyzePose(result.landmarks[0])
         } else {
-          this.lastDetection = false;
-          this.drawResults(result);
+          this.lastDetection = false
+          this.drawResults(result)
         }
       } catch (err) {
-        console.error('[predictWebcam] image-mode detect failed:', err);
+        console.error('[predictWebcam] image-mode detect failed:', err)
       }
-      this.animationId = requestAnimationFrame(this.predictWebcam);
+      this.animationId = requestAnimationFrame(this.predictWebcam)
     },
 
     drawResults(result) {
-      this.canvasCtx.save();
-      // Clear drawing area
-      this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      // console.log('[drawResults] canvas size:', this.canvas.width, this.canvas.height);
+      this.canvasCtx.save()
+      this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height)
       if (result && result.landmarks && result.landmarks.length > 0) {
-        // Mirror landmarks in X to match mirrored video display
-        // console.log('[drawResults] result:', result);
-        const mirrored = result.landmarks.map(landmarkSet => landmarkSet.map(p => ({ x: 1 - p.x, y: p.y, z: p.z, visibility: p.visibility })));
-        // Draw first pose
-        // const first = mirrored[0][0];
-        // if (first) {
-        //   this.canvasCtx.beginPath();
-        //   this.canvasCtx.arc(first.x * this.canvas.width, first.y * this.canvas.height, 8, 0, 2 * Math.PI);
-        //   this.canvasCtx.fillStyle = 'red';
-        //   this.canvasCtx.fill();
-        //   // console.log('[drawResults] drew nose dot at', first.x * this.canvas.width, first.y * this.canvas.height);
-        // }
+        const mirrored = result.landmarks.map(landmarkSet => 
+          landmarkSet.map(p => ({ x: 1 - p.x, y: p.y, z: p.z, visibility: p.visibility }))
+        )
         for (const lm of mirrored) {
-          this.drawingUtils.drawLandmarks(lm, { radius: 4 });
-          this.drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS);
+          this.drawingUtils.drawLandmarks(lm, { radius: 4 })
+          this.drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS)
         }
-        // console.log('[drawResults] drew pose landmarks and connectors');
       } else {
-        // No canvas text; HTML message shows 'Встаньте в кадр'
-        this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height)
       }
-      this.canvasCtx.restore();
+      this.canvasCtx.restore()
     },
-
 
     analyzePose(landmarks) {
-      this.formCorrections = [];
-      this.showFormCorrection = false;
-
-      // Check if person is in push-up position (roughly horizontal)
-      const leftShoulder = landmarks[11];
-      const rightShoulder = landmarks[12];
-      const leftAnkle = landmarks[27];
-      const rightAnkle = landmarks[28];
-
-      if (leftShoulder && rightShoulder && leftAnkle && rightAnkle) {
-        const shoulderAvgY = (leftShoulder.y + rightShoulder.y) / 2;
-        const ankleAvgY = (leftAnkle.y + rightAnkle.y) / 2;
-        const bodyAngle = Math.abs(shoulderAvgY - ankleAvgY);
-        this.isInPushupPosition = bodyAngle < 0.4; // Threshold for horizontal position
-        // console.log('[analyzePose] shoulderAvgY:', shoulderAvgY, 'ankleAvgY:', ankleAvgY)
-        // console.log('[analyzePose] bodyAngle:', bodyAngle, 'isInPushupPosition:', this.isInPushupPosition);
-
-        if (!this.isInPushupPosition) {
-          this.feedbackMessage = 'Встаньте в горизонтальное положение для отжиманий';
-          this.feedbackClass = 'warning';
-          return;
-        } else {
-          this.feedbackMessage = 'Начинайте упражнение';
-          this.feedbackClass = 'info';
-        }
-      }
-
-      // Analyze elbow angles for push-up counting
-      this.analyzeElbowAngles(landmarks);
-      
-      // Check form corrections
-      this.checkFormCorrections(landmarks);
-    },
-
-    analyzeElbowAngles(landmarks) {
-      const leftShoulder = landmarks[11];
-      const leftElbow = landmarks[13];
-      const leftWrist = landmarks[15];
-      const rightShoulder = landmarks[12];
-      const rightElbow = landmarks[14];
-      const rightWrist = landmarks[16];
-
-      if (leftShoulder && leftElbow && leftWrist) {
-        const leftAngle = this.calculateAngle(leftShoulder, leftElbow, leftWrist);
-        this.processElbowAngle(leftAngle, 'left');
-      }
-
-      if (rightShoulder && rightElbow && rightWrist) {
-        const rightAngle = this.calculateAngle(rightShoulder, rightElbow, rightWrist);
-        this.processElbowAngle(rightAngle, 'right');
-      }
-    },
-
-    calculateAngle(a, b, c) {
-      // Calculate angle at point b (elbow)
-      const ab = { x: a.x - b.x, y: a.y - b.y };
-      const cb = { x: c.x - b.x, y: c.y - b.y };
-      
-      const dot = ab.x * cb.x + ab.y * cb.y;
-      const cross = ab.x * cb.y - ab.y * cb.x;
-      
-      const angle = Math.atan2(cross, dot) * (180 / Math.PI);
-      return Math.abs(angle);
-    },
-
-    processElbowAngle(angle, side) {
-      if (angle < this.minAngle && this.lastPosture === 'up') {
-        // Going down
-        this.lastPosture = 'down';
-        this.currentPhase = 'Опускание';
-        this.feedbackMessage = 'Медленно опускайтесь';
-        this.feedbackClass = 'info';
-      } else if (angle > this.maxAngle && this.lastPosture === 'down') {
-        // Going up - count repetition
-        this.lastPosture = 'up';
-        this.repetitionCount++;
-        this.currentPhase = 'Подъем';
-        this.feedbackMessage = `Отлично! Повторение ${this.repetitionCount}`;
-        this.feedbackClass = 'success';
-        
-        // Haptic feedback if available
-        if (navigator.vibrate) {
-          navigator.vibrate(50);
+      if (this.exerciseLogic) {
+        const canProceed = this.exerciseLogic.analyzePose(landmarks)
+        if (canProceed) {
+          this.exerciseLogic.analyzeExerciseAngles(landmarks)
+          this.exerciseLogic.checkFormCorrections(landmarks)
         }
       }
     },
 
-    checkFormCorrections(landmarks) {
-      const leftShoulder = landmarks[11];
-      const rightShoulder = landmarks[12];
-      const leftHip = landmarks[23];
-      const rightHip = landmarks[24];
-      const nose = landmarks[0];
-
-      // Check back alignment
-      if (leftShoulder && rightShoulder && leftHip && rightHip) {
-        const shoulderAvgY = (leftShoulder.y + rightShoulder.y) / 2;
-        const hipAvgY = (leftHip.y + rightHip.y) / 2;
-        
-        if (Math.abs(shoulderAvgY - hipAvgY) > 0.05) {
-          this.formCorrections.push('Держите спину прямой! Избегайте прогиба в пояснице');
-        }
-      }
-
-      // Check head position
-      if (nose && leftShoulder && rightShoulder) {
-        const shoulderAvgX = (leftShoulder.x + rightShoulder.x) / 2;
-        if (Math.abs(nose.x - shoulderAvgX) > 0.1) {
-          this.formCorrections.push('Держите голову на одной линии с позвоночником');
-        }
-      }
-
-      if (this.formCorrections.length > 0) {
-        this.showFormCorrection = true;
-        this.feedbackClass = 'warning';
+    resetCounter() {
+      if (this.exerciseLogic) {
+        this.exerciseLogic.resetCounter()
       }
     },
 
     getCorrectionClass(correction) {
-      if (correction.includes('прямой')) return 'critical';
-      if (correction.includes('голову')) return 'warning';
-      return 'info';
-    },
-
-  // stopCamera is now above, using new logic
-
-    resetCounter() {
-      this.repetitionCount = 0;
-      this.lastPosture = 'up';
-      this.currentPhase = 'Готовность';
-      this.feedbackMessage = 'Счетчик сброшен. Готовы к новому подходу!';
-      this.feedbackClass = 'info';
+      if (this.exerciseLogic) {
+        return this.exerciseLogic.getCorrectionClass(correction)
+      }
+      return 'info'
     }
   },
   beforeUnmount() {
-    this.stopCamera();
+    this.stopCamera()
   }
 }
 </script>
@@ -593,6 +466,17 @@ button:disabled {
   background: #e3f2fd;
   color: #1565c0;
   border-left: 4px solid #1565c0;
+}
+
+.loading-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
+  text-align: center;
 }
 
      @media (max-width: 768px) {

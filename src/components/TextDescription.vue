@@ -1,30 +1,36 @@
 <template>
-  <div class="text-section">
+  <div v-if="exercise" class="text-section">
     <h2>tl;dw</h2>
     <div class="description">
       <h3>Важные моменты:</h3>
       <ul>
-        <li>Тело должно образовывать прямую линию от головы до пяток</li>
-        <li>Локти должны быть под углом 45-60 градусов к телу</li>
-        <li>Опускайтесь до угла 90 градусов в локтях</li>
-        <li>Держите корпус напряженным во время движения</li>
-        <li>Дышите правильно: вдох при опускании, выдох при подъеме</li>
+        <li v-for="point in exercise.importantPoints" :key="point">
+          {{ point }}
+        </li>
       </ul>
       
       <h3>Распространенные ошибки:</h3>
       <ul>
-        <li>Прогиб в пояснице</li>
-        <li>Неполная амплитуда движения</li>
-        <li>Разведение локтей в стороны</li>
-        <li>Задержка дыхания</li>
+        <li v-for="mistake in exercise.commonMistakes" :key="mistake">
+          {{ mistake }}
+        </li>
       </ul>
     </div>
+  </div>
+  <div v-else class="loading-placeholder">
+    <p>Загрузка описания...</p>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'TextDescription'
+  name: 'TextDescription',
+  props: {
+    exercise: {
+      type: Object,
+      required: true
+    }
+  }
 }
 </script>
 
@@ -48,5 +54,15 @@ export default {
 
 .description li {
   margin-bottom: 0.5rem;
+}
+
+.loading-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
 }
 </style>
