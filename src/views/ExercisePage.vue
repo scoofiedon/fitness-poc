@@ -6,7 +6,7 @@
         <h1>{{ exercise.name }}</h1>
         <div class="exercise-meta">
           <span class="category">{{ exercise.category }}</span>
-          <span class="difficulty" :class="exercise.difficulty.toLowerCase()">
+          <span class="difficulty" :class="exercise.difficultyEn.toLowerCase()">
             {{ exercise.difficulty }}
           </span>
           <span class="name-en">{{ exercise.nameEn }}</span>
@@ -191,6 +191,12 @@ export default {
   position: sticky;
   top: 120px;
   height: fit-content;
+}
+
+.app-footer {
+  background: #f8f9fa;
+  text-align: center;
+  padding: 1rem;
 }
 
 @media (max-width: 1024px) {

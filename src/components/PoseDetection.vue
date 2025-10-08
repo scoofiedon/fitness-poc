@@ -1,6 +1,6 @@
 <template>
   <div v-if="exerciseData" class="pose-detection">
-    <h2>Тренер по {{ exerciseName }}</h2>
+    <h2>AI Тренер посмотрит, как ты делаешь {{ exerciseName.toLowerCase() }} 😏</h2>
     <div class="camera-section" :class="{ 'camera-active': isCameraActive }">
       <template v-if="isCameraActive">
         <div class="camera-wrapper">

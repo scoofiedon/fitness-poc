@@ -5,6 +5,7 @@ export const exercises = [
     nameEn: 'Push-ups',
     category: 'Грудь',
     difficulty: 'Начинающий',
+    difficultyEn: 'Beginner',
     description: 'Классическое упражнение для развития мышц груди, плеч и трицепсов',
     videoUrl: 'https://rutube.ru/play/embed/ff46fa6927f5d532de1429dee83d3273/',
     videoTitle: 'Обучение отжиманиям',
@@ -41,6 +42,7 @@ export const exercises = [
     nameEn: 'Squats',
     category: 'Ноги',
     difficulty: 'Начинающий',
+    difficultyEn: 'Beginner',
     description: 'Базовое упражнение для развития мышц ног и ягодиц',
     videoUrl: 'https://rutube.ru/play/embed/df81ef638919b19e7e46ac30d81ae72c/',
     videoTitle: 'Обучение приседаниям',
@@ -71,46 +73,12 @@ export const exercises = [
     }
   },
   {
-    id: 'plank',
-    name: 'Планка',
-    nameEn: 'Plank',
-    category: 'Кор',
-    difficulty: 'Средний',
-    description: 'Упражнение для укрепления мышц кора и стабилизации корпуса',
-    videoUrl: 'https://rutube.ru/play/embed/4d856b988d2da6caf41bdc1f55594f96/',
-    videoTitle: 'Обучение планке',
-    importantPoints: [
-      'Тело образует прямую линию',
-      'Локти под углом 90 градусов к телу',
-      'Ноги вместе, носки упираются в пол',
-      'Живот втянут, ягодицы напряжены',
-      'Дышите ровно и глубоко'
-    ],
-    commonMistakes: [
-      'Прогиб в пояснице',
-      'Поднятие таза вверх',
-      'Заваливание плеч вперед',
-      'Задержка дыхания'
-    ],
-    poseDetection: {
-      exerciseType: 'plank',
-      minAngle: 85,
-      maxAngle: 95,
-      bodyPositionThreshold: 0.1,
-      keyPoints: {
-        shoulders: [11, 12],
-        hips: [23, 24],
-        knees: [25, 26],
-        ankles: [27, 28]
-      }
-    }
-  },
-  {
     id: 'lunges',
     name: 'Выпады',
     nameEn: 'Lunges',
     category: 'Ноги',
     difficulty: 'Средний',
+    difficultyEn: 'Medium',
     description: 'Упражнение для развития мышц ног с акцентом на ягодицы и квадрицепсы',
     videoUrl: 'https://rutube.ru/play/embed/fb883fe537f6f5d7f8c4de708b6a0080/',
     videoTitle: 'Обучение выпадам',
@@ -137,6 +105,42 @@ export const exercises = [
         knees: [25, 26],
         ankles: [27, 28],
         shoulders: [11, 12]
+      }
+    }
+  },
+  {
+    id: 'plank',
+    name: 'Планка',
+    nameEn: 'Plank',
+    category: 'Кор',
+    difficulty: 'Продвинутый',
+    difficultyEn: 'Advanced',
+    description: 'Упражнение для укрепления мышц кора и стабилизации корпуса',
+    videoUrl: 'https://rutube.ru/play/embed/4d856b988d2da6caf41bdc1f55594f96/',
+    videoTitle: 'Обучение планке',
+    importantPoints: [
+      'Тело образует прямую линию',
+      'Локти под углом 90 градусов к телу',
+      'Ноги вместе, носки упираются в пол',
+      'Живот втянут, ягодицы напряжены',
+      'Дышите ровно и глубоко'
+    ],
+    commonMistakes: [
+      'Прогиб в пояснице',
+      'Поднятие таза вверх',
+      'Заваливание плеч вперед',
+      'Задержка дыхания'
+    ],
+    poseDetection: {
+      exerciseType: 'plank',
+      minAngle: 85,
+      maxAngle: 95,
+      bodyPositionThreshold: 0.1,
+      keyPoints: {
+        shoulders: [11, 12],
+        hips: [23, 24],
+        knees: [25, 26],
+        ankles: [27, 28]
       }
     }
   }

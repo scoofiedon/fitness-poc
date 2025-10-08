@@ -37,7 +37,7 @@
         >
           <div class="card-header">
             <h3>{{ exercise.name }}</h3>
-            <span class="difficulty-badge" :class="exercise.difficulty.toLowerCase()">
+            <span class="difficulty-badge" :class="exercise.difficultyEn.toLowerCase()">
               {{ exercise.difficulty }}
             </span>
           </div>
