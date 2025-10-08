@@ -12,7 +12,7 @@
             :width="videoWidth" :height="videoHeight"
           ></canvas>
           <!-- Non-mirrored HTML message (won't be flipped) -->
-          <div v-if="!lastDetection" class="camera-message">Встаньте в кадр</div>
+          <div v-if="!lastDetection" class="camera-message">Встаньте в кадр полностью</div>
         </div>
       </template>
     </div>
@@ -85,6 +85,7 @@ export default {
     },
 
 async startCamera() {
+  this.resetCounter();
   if (this.running) return;
   // console.log('[startCamera] Initializing...');
   this.running = true;
@@ -121,6 +122,9 @@ async startCamera() {
       },
       runningMode: 'VIDEO',
       numPoses: 1,
+      minPoseDetectionConfidence: 0.9,
+      minPosePresenceConfidence: 0.8,
+      minTrackingConfidence: 0.8
     });
     // console.log('[startCamera] poseLandmarker created successfully');
 
@@ -212,25 +216,25 @@ async startCamera() {
       }
 
       // Try video-mode API first, fallback to image-mode if it fails
-      try {
-        if (typeof this.poseLandmarker.detectForVideo === 'function') {
-          // console.log('[predictWebcam] using detectForVideo');
-          this.lastVideoTime = this.video.currentTime;
-          this.poseLandmarker.detectForVideo(this.video, performance.now(), (result) => {
-            try { this.drawResults(result); } catch (e) { console.error('[predictWebcam] drawResults error:', e); }
-            if (result && result.landmarks && result.landmarks.length > 0) {
-              this.lastDetection = true;
-              this.analyzePose(result.landmarks[0]);
-            } else {
-              this.lastDetection = false;
-            }
-            this.animationId = requestAnimationFrame(this.predictWebcam);
-          });
-          return;
-        }
-      } catch (err) {
-        // console.warn('[predictWebcam] detectForVideo failed, will fallback to image detect:', err.message || err);
-      }
+      // try {
+      //   if (typeof this.poseLandmarker.detectForVideo === 'function') {
+      //     // console.log('[predictWebcam] using detectForVideo');
+      //     this.lastVideoTime = this.video.currentTime;
+      //     this.poseLandmarker.detectForVideo(this.video, performance.now(), (result) => {
+      //       try { this.drawResults(result); } catch (e) { console.error('[predictWebcam] drawResults error:', e); }
+      //       if (result && result.landmarks && result.landmarks.length > 0) {
+      //         this.lastDetection = true;
+      //         this.analyzePose(result.landmarks[0]);
+      //       } else {
+      //         this.lastDetection = false;
+      //       }
+      //       this.animationId = requestAnimationFrame(this.predictWebcam);
+      //     });
+      //     return;
+      //   }
+      // } catch (err) {
+      //   console.warn('[predictWebcam] detectForVideo failed, will fallback to image detect:', err.message || err);
+      // }
 
       // Fallback: draw current video frame into offscreen canvas and run detect(image)
       try {
@@ -270,16 +274,17 @@ async startCamera() {
       // console.log('[drawResults] canvas size:', this.canvas.width, this.canvas.height);
       if (result && result.landmarks && result.landmarks.length > 0) {
         // Mirror landmarks in X to match mirrored video display
-        const mirrored = result.landmarks.map(landmarkSet => landmarkSet.map(p => ({ x: 1 - p.x, y: p.y, z: p.z })));
+        // console.log('[drawResults] result:', result);
+        const mirrored = result.landmarks.map(landmarkSet => landmarkSet.map(p => ({ x: 1 - p.x, y: p.y, z: p.z, visibility: p.visibility })));
         // Draw first pose
-        const first = mirrored[0][0];
-        if (first) {
-          this.canvasCtx.beginPath();
-          this.canvasCtx.arc(first.x * this.canvas.width, first.y * this.canvas.height, 8, 0, 2 * Math.PI);
-          this.canvasCtx.fillStyle = 'red';
-          this.canvasCtx.fill();
-          // console.log('[drawResults] drew nose dot at', first.x * this.canvas.width, first.y * this.canvas.height);
-        }
+        // const first = mirrored[0][0];
+        // if (first) {
+        //   this.canvasCtx.beginPath();
+        //   this.canvasCtx.arc(first.x * this.canvas.width, first.y * this.canvas.height, 8, 0, 2 * Math.PI);
+        //   this.canvasCtx.fillStyle = 'red';
+        //   this.canvasCtx.fill();
+        //   // console.log('[drawResults] drew nose dot at', first.x * this.canvas.width, first.y * this.canvas.height);
+        // }
         for (const lm of mirrored) {
           this.drawingUtils.drawLandmarks(lm, { radius: 4 });
           this.drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS);
@@ -300,21 +305,24 @@ async startCamera() {
       // Check if person is in push-up position (roughly horizontal)
       const leftShoulder = landmarks[11];
       const rightShoulder = landmarks[12];
-      const leftAnkle = landmarks[23];
-      const rightAnkle = landmarks[24];
+      const leftAnkle = landmarks[27];
+      const rightAnkle = landmarks[28];
 
       if (leftShoulder && rightShoulder && leftAnkle && rightAnkle) {
         const shoulderAvgY = (leftShoulder.y + rightShoulder.y) / 2;
         const ankleAvgY = (leftAnkle.y + rightAnkle.y) / 2;
         const bodyAngle = Math.abs(shoulderAvgY - ankleAvgY);
-        
         this.isInPushupPosition = bodyAngle < 0.4; // Threshold for horizontal position
+        // console.log('[analyzePose] shoulderAvgY:', shoulderAvgY, 'ankleAvgY:', ankleAvgY)
         // console.log('[analyzePose] bodyAngle:', bodyAngle, 'isInPushupPosition:', this.isInPushupPosition);
 
         if (!this.isInPushupPosition) {
           this.feedbackMessage = 'Встаньте в горизонтальное положение для отжиманий';
           this.feedbackClass = 'warning';
           return;
+        } else {
+          this.feedbackMessage = 'Начинайте упражнение';
+          this.feedbackClass = 'info';
         }
       }
 
