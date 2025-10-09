@@ -24,17 +24,7 @@ export const exercises = [
     ],
     poseDetectionReady: true,
     poseDetection: {
-      exerciseType: 'pushups',
-      minAngle: 90,
-      maxAngle: 160,
-      bodyPositionThreshold: 0.4,
-      keyPoints: {
-        shoulders: [11, 12],
-        elbows: [13, 14],
-        wrists: [15, 16],
-        hips: [23, 24],
-        ankles: [27, 28]
-      }
+      exerciseType: 'pushups'
     }
   },
   {
@@ -62,16 +52,7 @@ export const exercises = [
     ],
     poseDetectionReady: false,
     poseDetection: {
-      exerciseType: 'squats',
-      minAngle: 90,
-      maxAngle: 170,
-      bodyPositionThreshold: 0.3,
-      keyPoints: {
-        hips: [23, 24],
-        knees: [25, 26],
-        ankles: [27, 28],
-        shoulders: [11, 12]
-      }
+      exerciseType: 'squats'
     }
   },
   {
@@ -99,16 +80,7 @@ export const exercises = [
     ],
     poseDetectionReady: false,
     poseDetection: {
-      exerciseType: 'lunges',
-      minAngle: 80,
-      maxAngle: 160,
-      bodyPositionThreshold: 0.35,
-      keyPoints: {
-        hips: [23, 24],
-        knees: [25, 26],
-        ankles: [27, 28],
-        shoulders: [11, 12]
-      }
+      exerciseType: 'lunges'
     }
   },
   {
@@ -137,15 +109,6 @@ export const exercises = [
     poseDetectionReady: false,
     poseDetection: {
       exerciseType: 'plank',
-      minAngle: 85,
-      maxAngle: 95,
-      bodyPositionThreshold: 0.1,
-      keyPoints: {
-        shoulders: [11, 12],
-        hips: [23, 24],
-        knees: [25, 26],
-        ankles: [27, 28]
-      }
     }
   }
 ]

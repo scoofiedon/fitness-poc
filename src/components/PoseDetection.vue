@@ -120,7 +120,7 @@ export default {
       try {
         // Initialize exercise logic
         const exerciseType = this.exerciseData.exerciseType
-        this.exerciseLogic = ExerciseLogicFactory.createLogic(exerciseType, this.exerciseData)
+        this.exerciseLogic = ExerciseLogicFactory.createLogic(exerciseType)
         
         // Ensure video/canvas are rendered first
         this.isCameraActive = true
@@ -214,8 +214,8 @@ export default {
       if (this.canvasCtx) {
         this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height)
       }
-      this.feedbackMessage = 'Камера остановлена'
       this.feedbackClass = 'info'
+      this.feedbackMessage = 'Камера остановлена'
       this.currentPhase = 'Готовность'
       this.showFormCorrection = false
     },
