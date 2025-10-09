@@ -22,6 +22,7 @@ export const exercises = [
       'Разведение локтей в стороны',
       'Задержка дыхания'
     ],
+    poseDetectionReady: true,
     poseDetection: {
       exerciseType: 'pushups',
       minAngle: 90,
@@ -59,6 +60,7 @@ export const exercises = [
       'Подъемы на носки',
       'Неполная амплитуда'
     ],
+    poseDetectionReady: false,
     poseDetection: {
       exerciseType: 'squats',
       minAngle: 90,
@@ -95,6 +97,7 @@ export const exercises = [
       'Наклон корпуса вперед',
       'Отрыв задней ноги от пола'
     ],
+    poseDetectionReady: false,
     poseDetection: {
       exerciseType: 'lunges',
       minAngle: 80,
@@ -131,6 +134,7 @@ export const exercises = [
       'Заваливание плеч вперед',
       'Задержка дыхания'
     ],
+    poseDetectionReady: false,
     poseDetection: {
       exerciseType: 'plank',
       minAngle: 85,

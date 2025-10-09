@@ -16,19 +16,25 @@
 
     <main class="exercise-main">
       <div v-if="exercise" class="exercise-content">
-        <div class="left-column">
+        <div v-if="exercise.poseDetectionReady" class="left-column">
           <VideoExplanation :exercise="exercise" />
           <TextDescription :exercise="exercise" />
         </div>
-        
-        <div class="right-column">
+        <div v-else class="left-column">
+          <VideoExplanation :exercise="exercise" />
+          <h2>Робот ещё не научился делать это упражнение, человечество пока впереди. Пока..🦾</h2>
+        </div>
+        <div v-if="exercise.poseDetectionReady" class="right-column">
           <PoseDetection 
             :exercise-data="exercise.poseDetection"
             :exercise-name="exercise.name"
           />
         </div>
+        <div v-else class="right-column">
+          <TextDescription :exercise="exercise" />
+        </div>
       </div>
-      
+
       <div v-else class="loading-state">
         <p>Загрузка упражнения...</p>
       </div>
@@ -191,6 +197,10 @@ export default {
   position: sticky;
   top: 120px;
   height: fit-content;
+}
+
+.exercise-content h2 {
+  text-align: center;
 }
 
 .app-footer {

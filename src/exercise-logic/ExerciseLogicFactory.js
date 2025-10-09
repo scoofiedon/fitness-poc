@@ -1,4 +1,3 @@
-import { ExerciseLogic } from './ExerciseLogic.js'
 import { PushupLogic } from './PushupLogic.js'
 import { SquatLogic } from './SquatLogic.js'
 import { PlankLogic } from './PlankLogic.js'
@@ -15,9 +14,6 @@ export class ExerciseLogicFactory {
         return new PlankLogic(exerciseData)
       case 'lunges':
         return new LungeLogic(exerciseData)
-      default:
-        // Default to base ExerciseLogic for unknown exercise types
-        return new ExerciseLogic(exerciseData)
     }
   }
 }

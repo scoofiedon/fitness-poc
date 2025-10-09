@@ -1,6 +1,6 @@
 <template>
   <div v-if="exerciseData" class="pose-detection">
-    <h2>AI Тренер посмотрит, как ты делаешь {{ exerciseName.toLowerCase() }} 😏</h2>
+    <h2>AI Тренер посмотрит, как ты делаешь упражнение 😏</h2>
     <div class="camera-section" :class="{ 'camera-active': isCameraActive }">
       <template v-if="isCameraActive">
         <div class="camera-wrapper">
@@ -119,7 +119,7 @@ export default {
       
       try {
         // Initialize exercise logic
-        const exerciseType = this.exerciseData.exerciseType || 'pushups'
+        const exerciseType = this.exerciseData.exerciseType
         this.exerciseLogic = ExerciseLogicFactory.createLogic(exerciseType, this.exerciseData)
         
         // Ensure video/canvas are rendered first
