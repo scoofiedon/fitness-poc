@@ -57,11 +57,6 @@ export class LungeLogic extends ExerciseLogic {
       this.currentPhase = `Подъем (${this.currentLeg}ая нога вперед)`
       this.feedbackMessage = `Отлично! Повторение ${this.repetitionCount} на ${this.currentLeg}ую ногу`
       this.feedbackClass = 'success'
-      
-      // Haptic feedback if available
-      // if (navigator.vibrate) {
-      //   navigator.vibrate(50)
-      // }
     }
   }
 

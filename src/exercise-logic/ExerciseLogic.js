@@ -88,11 +88,6 @@ export class ExerciseLogic {
       this.currentPhase = 'Подъем'
       this.feedbackMessage = `Отлично! Повторение ${this.repetitionCount}`
       this.feedbackClass = 'success'
-      
-      // Haptic feedback if available
-      // if (navigator.vibrate) {
-      //   navigator.vibrate(50)
-      // }
     }
   }
 
