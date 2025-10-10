@@ -42,10 +42,8 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Handle API/model requests
-  if (event.request.url.includes('pose_landmarker_full.task') || 
-      event.request.url.includes('mediapipe') ||
-      event.request.url.includes('tasks-vision')) {
+  // For model requests, try cache first, then network
+  if (event.request.url.includes('pose_landmarker_full.task')) {
     event.respondWith(
       caches.match(event.request)
         .then(response => {
@@ -74,16 +72,6 @@ self.addEventListener('fetch', event => {
             return response;
           });
         })
-    );
-    return;
-  }
-
-  // Handle navigation requests (SPA routes)
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/index.html');
-      })
     );
     return;
   }
