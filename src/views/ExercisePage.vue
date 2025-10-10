@@ -16,22 +16,21 @@
 
     <main class="exercise-main">
       <div v-if="exercise" class="exercise-content">
-        <div v-if="exercise.poseDetectionReady" class="left-column">
+        <div  class="left-column">
           <VideoExplanation :exercise="exercise" />
           <TextDescription :exercise="exercise" />
         </div>
-        <div v-else class="left-column">
-          <VideoExplanation :exercise="exercise" />
-          <h2>Робот ещё не научился делать это упражнение, человечество пока впереди. Пока..🦾</h2>
-        </div>
         <div v-if="exercise.poseDetectionReady" class="right-column">
-          <PoseDetection 
+          <PoseDetection
             :exercise-data="exercise.poseDetection"
             :exercise-name="exercise.name"
           />
         </div>
         <div v-else class="right-column">
-          <TextDescription :exercise="exercise" />
+          <h2>Робот ещё не научился делать это упражнение,
+            но ему очень жалко, и поэтому он попросил показать кота..
+          </h2>
+          <img style=" display: block; margin: auto; " src="https://cataas.com/cat?width=320">
         </div>
       </div>
 
@@ -73,7 +72,7 @@ export default {
     onMounted(() => {
       const exerciseId = route.params.id
       exercise.value = getExerciseById(exerciseId)
-      
+
       if (!exercise.value) {
         router.push('/')
       }
@@ -199,9 +198,9 @@ export default {
   height: fit-content;
 }
 
-.exercise-content h2 {
+/* .exercise-content h2 {
   text-align: center;
-}
+} */
 
 .app-footer {
   background: #f8f9fa;
@@ -213,7 +212,7 @@ export default {
   .exercise-content {
     grid-template-columns: 1fr;
   }
-  
+
   .right-column {
     position: static;
   }
@@ -223,15 +222,15 @@ export default {
   .exercise-header {
     padding: 1rem;
   }
-  
+
   .header-content h1 {
     font-size: 1.5rem;
   }
-  
+
   .exercise-main {
     padding: 1rem;
   }
-  
+
   .exercise-meta {
     flex-direction: column;
     gap: 0.5rem;
