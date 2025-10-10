@@ -6,7 +6,7 @@
         {{ exercise.difficulty }}
       </span>
     </div>
-    
+
     <div class="card-content">
       <p class="description">{{ exercise.description }}</p>
       <div class="exercise-meta">
@@ -14,7 +14,7 @@
         <span class="name-en">{{ exercise.nameEn }}</span>
       </div>
     </div>
-    
+
     <div class="card-footer">
       <button class="start-btn">Начать тренировку</button>
     </div>
@@ -36,10 +36,10 @@ export default {
 
 <style scoped>
 .exercise-card {
-  background: white;
+  background: var(--background-card);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px var(--shadow-color);
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid transparent;
@@ -47,8 +47,8 @@ export default {
 
 .exercise-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  border-color: #667eea;
+  box-shadow: 0 8px 25px var(--shadow-color);
+  border-color: var(--primary-color);
 }
 
 .card-header {
@@ -59,7 +59,7 @@ export default {
 }
 
 .card-header h3 {
-  color: #2c3e50;
+  color: var(--text-primary);
   margin: 0;
   font-size: 1.25rem;
 }
@@ -92,7 +92,7 @@ export default {
 }
 
 .description {
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 1rem;
 }
@@ -105,14 +105,14 @@ export default {
 }
 
 .category {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: var(--primary-color);
+  color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
 }
 
 .name-en {
-  color: #666;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -121,7 +121,7 @@ export default {
 }
 
 .start-btn {
-  background: #667eea;
+  background: var(--primary-color);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -133,6 +133,6 @@ export default {
 }
 
 .start-btn:hover {
-  background: #5a67d8;
+  background: var(--primary-dark);
 }
 </style>

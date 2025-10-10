@@ -2,13 +2,13 @@
   <div v-if="exercise" class="video-section">
     <h2>Видеоурок</h2>
     <div class="video-container">
-      <iframe 
-        width="560" 
-        height="315" 
-        :src="exercise.videoUrl" 
+      <iframe
+        width="560"
+        height="315"
+        :src="exercise.videoUrl"
         :title="exercise.videoTitle"
-        frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowfullscreen>
       </iframe>
     </div>
@@ -49,6 +49,7 @@ export default {
   width: 100%;
   height: 100%;
   border-radius: 8px;
+  border: 2px solid var(--border-color);
 }
 
 .loading-placeholder {
@@ -56,8 +57,8 @@ export default {
   justify-content: center;
   align-items: center;
   height: 200px;
-  background: #f8f9fa;
+  background: var(--background-light);
   border-radius: 8px;
-  color: #666;
+  color: var(--text-secondary);
 }
 </style>

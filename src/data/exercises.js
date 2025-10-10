@@ -50,7 +50,7 @@ export const exercises = [
       'Подъемы на носки',
       'Неполная амплитуда'
     ],
-    poseDetectionReady: false,
+    poseDetectionReady: true,
     poseDetection: {
       exerciseType: 'squats'
     }

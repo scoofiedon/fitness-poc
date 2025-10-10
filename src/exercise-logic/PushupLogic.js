@@ -5,8 +5,8 @@ export class PushupLogic extends ExerciseLogic {
     super()
     this.minAngle = 90
     this.maxAngle = 160
-    this.leftAngle 
-    this.rightAngle
+    this.leftAngle = 160
+    this.rightAngle = 160
   }
 
   analyzePose(landmarks) {
@@ -23,11 +23,12 @@ export class PushupLogic extends ExerciseLogic {
         const ankleAvgY = (leftAnkle.y + rightAnkle.y) / 2
         const bodyAngle = Math.abs(shoulderAvgY - ankleAvgY)
         this.isInExercisePosition = bodyAngle < 0.4
-        
+
         if (!this.isInExercisePosition) {
           this.feedbackMessage = 'Встаньте в правильное положение для упражнения'
           this.feedbackClass = 'warning'
           this.lastPosture = 'up'
+          this.currentPhase = 0
           return false
         } else {
           this.feedbackMessage = 'Начинайте упражнение'
@@ -39,18 +40,27 @@ export class PushupLogic extends ExerciseLogic {
     }
 
   processAngle(angle) {
-    if (angle < this.minAngle && this.lastPosture === 'up') {
-      // Going down
-      this.lastPosture = 'down'
-      this.currentPhase = 'Опускание'
+    console.log(angle)
+    if (this.lastPosture === 'up') {
+      // Going down - от 0% до 50%
+      if (angle < this.minAngle) {
+        this.lastPosture = 'down'
+      }
+      // Прогресс опускания: от 0% (угол 160°) до 50% (угол 90°)
+      let progress = ((this.maxAngle - angle) / (this.maxAngle - this.minAngle)) * 50
+      this.currentPhase = Math.max(0, Math.min(50, progress))
       this.feedbackMessage = 'Медленно опускайтесь'
       this.feedbackClass = 'info'
-    } else if (angle > this.maxAngle && this.lastPosture === 'down') {
-      // Going up - count repetition
-      this.lastPosture = 'up'
-      this.repetitionCount++
-      this.currentPhase = 'Подъем'
-      this.feedbackMessage = `Отлично! Повторение ${this.repetitionCount}`
+    } else if (this.lastPosture === 'down') {
+      // Going up - от 50% до 100%
+      if (angle > this.maxAngle) {
+        this.lastPosture = 'up'
+        this.repetitionCount++
+      }
+      // Прогресс подъема: от 50% (угол 90°) до 100% (угол 160°)
+      let progress = ((angle - this.minAngle) / (this.maxAngle - this.minAngle)) * 50 + 50
+      this.currentPhase = Math.max(50, Math.min(100, progress))
+      this.feedbackMessage = 'Медленно подимайтесь'
       this.feedbackClass = 'success'
     }
   }
@@ -66,12 +76,12 @@ export class PushupLogic extends ExerciseLogic {
     if (leftShoulder && rightShoulder && leftElbow && rightElbow) {
       const shoulderAvgX = (leftShoulder.x + rightShoulder.x) / 2
       const shoulderAvgY = (leftShoulder.y + rightShoulder.y) / 2
-      
+
       const leftElbowShoulderAngle = this.calculateAngle(leftElbow, leftShoulder, { x: shoulderAvgX, y: shoulderAvgY })
       const rightElbowShoulderAngle = this.calculateAngle(rightElbow, rightShoulder, { x: shoulderAvgX, y: shoulderAvgY })
-      
+
       const avgElbowAngle = (leftElbowShoulderAngle + rightElbowShoulderAngle) / 2
-      
+
       if (avgElbowAngle < 45 || avgElbowAngle > 60) {
         this.formCorrections.push('Локти должны быть под углом 45-60 градусов к телу')
         this.showFormCorrection = true
@@ -82,7 +92,7 @@ export class PushupLogic extends ExerciseLogic {
       const shoulderAvgY = (leftShoulder.y + rightShoulder.y) / 2
       const leftElbowY = leftElbow.y
       const rightElbowY = rightElbow.y
-      
+
       // Check if body forms a straight line
       if (Math.abs(leftElbowY - shoulderAvgY) > 0.1 || Math.abs(rightElbowY - shoulderAvgY) > 0.1) {
         this.formCorrections.push('Держите тело в прямой линии от головы до пяток')
@@ -93,11 +103,11 @@ export class PushupLogic extends ExerciseLogic {
     // Check hand position
     const leftWrist = landmarks[15]
     const rightWrist = landmarks[16]
-    
+
     if (leftWrist && rightWrist && leftShoulder && rightShoulder) {
       const wristAvgX = (leftWrist.x + rightWrist.x) / 2
       const shoulderAvgX = (leftShoulder.x + rightShoulder.x) / 2
-      
+
       if (Math.abs(wristAvgX - shoulderAvgX) > 0.15) {
         this.formCorrections.push('Руки должны быть прямо под плечами')
         this.showFormCorrection = true

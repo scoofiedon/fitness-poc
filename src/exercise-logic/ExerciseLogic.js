@@ -3,7 +3,7 @@ export class ExerciseLogic {
     // Данные, используемые в PoseDetection.vue
     this.lastPosture = 'up'
     this.repetitionCount = 0
-    this.currentPhase = 'Готовность'
+    this.currentPhase = 0
     this.feedbackMessage = 'Запустите камеру для начала тренировки'
     this.feedbackClass = 'info'
     this.formCorrections = []
@@ -23,10 +23,10 @@ export class ExerciseLogic {
     // Calculate angle at point b
     const ab = { x: a.x - b.x, y: a.y - b.y }
     const cb = { x: c.x - b.x, y: c.y - b.y }
-    
+
     const dot = ab.x * cb.x + ab.y * cb.y
     const cross = ab.x * cb.y - ab.y * cb.x
-    
+
     const angle = Math.atan2(cross, dot) * (180 / Math.PI)
     return Math.abs(angle)
   }

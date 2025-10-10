@@ -1,9 +1,6 @@
 <template>
   <div class="exercise-list">
-    <header class="app-header">
-      <h1>🤖✨AI Тренер</h1>
-      <p>Выберите упражнение для начала тренировки</p>
-    </header>
+    <AppHeader />
 
     <main class="main-content">
       <div class="filters">
@@ -16,7 +13,7 @@
             </option>
           </select>
         </div>
-        
+
         <div class="filter-group">
           <label for="difficulty-filter">Сложность:</label>
           <select id="difficulty-filter" v-model="selectedDifficulty" @change="filterExercises">
@@ -29,8 +26,8 @@
       </div>
 
       <div class="exercises-grid">
-        <div 
-          v-for="exercise in filteredExercises" 
+        <div
+          v-for="exercise in filteredExercises"
           :key="exercise.id"
           class="exercise-card"
           @click="goToExercise(exercise.id)"
@@ -41,7 +38,7 @@
               {{ exercise.difficulty }}
             </span>
           </div>
-          
+
           <div class="card-content">
             <p class="description">{{ exercise.description }}</p>
             <div class="exercise-meta">
@@ -49,7 +46,7 @@
               <span class="name-en">{{ exercise.nameEn }}</span>
             </div>
           </div>
-          
+
           <div class="card-footer">
             <button class="start-btn">Начать тренировку</button>
           </div>
@@ -61,9 +58,7 @@
       </div>
     </main>
 
-    <footer class="app-footer">
-      <p>© 2025 🤡</p>
-    </footer>
+    <AppFooter />
   </div>
 </template>
 
@@ -71,9 +66,15 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { exercises, getAllCategories, getAllDifficulties } from '../data/exercises.js'
+import AppHeader from '../components/Header.vue'
+import AppFooter from '../components/Footer.vue'
 
 export default {
   name: 'ExerciseList',
+  components: {
+    AppHeader,
+    AppFooter
+  },
   setup() {
     const router = useRouter()
     const selectedCategory = ref('')
@@ -120,13 +121,6 @@ export default {
   flex-direction: column;
 }
 
-.app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  text-align: center;
-  padding: 2rem;
-}
-
 .main-content {
   flex: 1;
   max-width: 1200px;
@@ -150,21 +144,22 @@ export default {
 
 .filter-group label {
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .filter-group select {
   padding: 0.5rem;
-  border: 2px solid #ddd;
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   font-size: 1rem;
-  background: white;
+  background: var(--background-card);
   cursor: pointer;
+  color: var(--text-primary);
 }
 
 .filter-group select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--primary-color);
 }
 
 .exercises-grid {
@@ -175,10 +170,10 @@ export default {
 }
 
 .exercise-card {
-  background: white;
+  background: var(--background-card);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px var(--shadow-color);
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid transparent;
@@ -186,8 +181,8 @@ export default {
 
 .exercise-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  border-color: #667eea;
+  box-shadow: 0 8px 25px var(--shadow-color);
+  border-color: var(--primary-color);
 }
 
 .card-header {
@@ -198,7 +193,7 @@ export default {
 }
 
 .card-header h3 {
-  color: #2c3e50;
+  color: var(--text-primary);
   margin: 0;
   font-size: 1.25rem;
 }
@@ -231,7 +226,7 @@ export default {
 }
 
 .description {
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 1rem;
 }
@@ -244,14 +239,14 @@ export default {
 }
 
 .category {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: var(--primary-color);
+  color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
 }
 
 .name-en {
-  color: #666;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -260,7 +255,7 @@ export default {
 }
 
 .start-btn {
-  background: #667eea;
+  background: var(--primary-color);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -272,33 +267,27 @@ export default {
 }
 
 .start-btn:hover {
-  background: #5a67d8;
+  background: var(--primary-dark);
 }
 
 .no-results {
   text-align: center;
   padding: 3rem;
-  color: #666;
-  background: #f8f9fa;
+  color: var(--text-secondary);
+  background: var(--background-light);
   border-radius: 8px;
-}
-
-.app-footer {
-  background: #f8f9fa;
-  text-align: center;
-  padding: 1rem;
 }
 
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
   }
-  
+
   .filters {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .exercises-grid {
     grid-template-columns: 1fr;
   }

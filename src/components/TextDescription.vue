@@ -8,7 +8,7 @@
           {{ point }}
         </li>
       </ul>
-      
+
       <h3>Распространенные ошибки:</h3>
       <ul>
         <li v-for="mistake in exercise.commonMistakes" :key="mistake">
@@ -36,14 +36,14 @@ export default {
 
 <style scoped>
 .text-section {
-  background: #f8f9fa;
+  background: var(--background-light);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 2rem;
 }
 
 .description h3 {
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-top: 1rem;
 }
 
@@ -54,6 +54,7 @@ export default {
 
 .description li {
   margin-bottom: 0.5rem;
+  color: var(--text-secondary);
 }
 
 .loading-placeholder {
@@ -61,8 +62,8 @@ export default {
   justify-content: center;
   align-items: center;
   height: 150px;
-  background: #f8f9fa;
+  background: var(--background-light);
   border-radius: 8px;
-  color: #666;
+  color: var(--text-secondary);
 }
 </style>
