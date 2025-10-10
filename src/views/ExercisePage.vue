@@ -3,6 +3,14 @@
     <AppHeader />
 
     <main class="exercise-main">
+      <div v-if="exercise" class="exercise-header">
+        <h2>{{ exercise.name }}</h2>
+        <div class="exercise-meta">
+          <span class="category">{{ exercise.category }}</span>
+          <span class="difficulty" :class="exercise.difficultyEn.toLowerCase()">{{ exercise.difficulty }}</span>
+        </div>
+      </div>
+
       <div v-if="exercise" class="exercise-content">
         <div class="left-column">
           <VideoExplanation :exercise="exercise" />
@@ -133,5 +141,59 @@ export default {
   .exercise-main {
     padding: 1rem;
   }
+}
+
+.exercise-header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--background-light);
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+}
+
+.exercise-header h2 {
+  color: var(--primary-color);
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: bold;
+}
+
+.exercise-meta {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.category {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.difficulty {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.difficulty.beginner {
+  background: #d4edda;
+  color: #155724;
+}
+
+.difficulty.medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.difficulty.advanced {
+  background: #f8d7da;
+  color: #721c24;
 }
 </style>
