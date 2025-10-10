@@ -108,7 +108,7 @@ export const exercises = [
     ],
     poseDetectionReady: false,
     poseDetection: {
-      exerciseType: 'plank',
+      exerciseType: 'plank'
     }
   }
 ]

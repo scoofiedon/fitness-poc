@@ -14,6 +14,8 @@ export class ExerciseLogicFactory {
         return new PlankLogic()
       case 'lunges':
         return new LungeLogic()
+      default:
+        throw new Error(`Unknown exercise type: ${exerciseType}`)
     }
   }
 }

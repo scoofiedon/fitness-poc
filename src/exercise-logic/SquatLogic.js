@@ -5,8 +5,8 @@ export class SquatLogic extends ExerciseLogic {
     super()
     this.minAngle = 70
     this.maxAngle = 160
-    this.leftAngle 
-    this.rightAngle
+    this.leftAngle = 0
+    this.rightAngle = 0
   }
 
   analyzePose(landmarks) {

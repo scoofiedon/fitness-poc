@@ -5,8 +5,8 @@ export class PlankLogic extends ExerciseLogic {
     super()
     this.minAngle = 160
     this.maxAngle = 160
-    this.leftAngle 
-    this.rightAngle
+    this.leftAngle = 0
+    this.rightAngle = 0
     this.plankStartTime = null
     this.plankDuration = 0
   }
