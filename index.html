@@ -12,5 +12,33 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      // GitHub Pages fallback routing
+      function handleRouting() {
+        const path = window.location.pathname;
+        const basePath = '/fitness-poc/';
+        
+        // If we're at the root, redirect to the app
+        if (path === '/' || path === basePath) {
+          window.location.href = basePath;
+          return;
+        }
+        
+        // For any other path, let Vue Router handle it
+        if (path.startsWith(basePath)) {
+          // The app will handle routing through Vue Router
+          return;
+        }
+        
+        // If path doesn't start with our base, redirect to base
+        window.location.href = basePath;
+      }
+      
+      // Handle routing when page loads
+      window.addEventListener('load', handleRouting);
+      
+      // Handle browser back/forward buttons
+      window.addEventListener('popstate', handleRouting);
+    </script>
   </body>
 </html>
