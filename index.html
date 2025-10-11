@@ -29,7 +29,7 @@
         
         // For any other path, let Vue Router handle it
         if (path.startsWith(basePath)) {
-          // Don't redirect immediately - give Vue Router time to initialize
+          // Don't interfere with Vue Router - let it handle the routing
           return;
         }
         
@@ -46,7 +46,7 @@
       // Mark app as loaded after Vue Router initializes
       setTimeout(() => {
         window.appLoaded = true;
-      }, 2000); // Increased timeout to 2 seconds
+      }, 3000);
     </script>
   </body>
 </html>
