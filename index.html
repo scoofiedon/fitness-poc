@@ -13,40 +13,38 @@
   <body>
     <div id="app"></div>
     <script>
-      // GitHub Pages fallback routing
+      // Single Page Apps for GitHub Pages
+      // This script handles routing for GitHub Pages
+      (function(l) {
+        if (l.search) {
+          var q = {};
+          l.search.slice(1).split('&').forEach(function(v) {
+            var a = v.split('=');
+            q[a[0]] = a.slice(1).join('=').replace(/~and~/g, '&');
+          });
+          if (q.p !== undefined) {
+            window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + (q.p || '') + 
+              (q.q ? ('?' + q.q) : '') +
+              l.hash
+            );
+          }
+        }
+      }(window.location))
+
+      // Additional fallback for GitHub Pages
       function handleRouting() {
         const path = window.location.pathname;
         const basePath = '/fitness-poc/';
         
-        // Only handle routing if the app is not already loaded
-        if (window.appLoaded) return;
-        
-        // If we're at the root, redirect to the app
-        if (path === '/' || path === basePath) {
-          window.location.href = basePath;
-          return;
-        }
-        
-        // For any other path, let Vue Router handle it
-        if (path.startsWith(basePath)) {
-          // Don't interfere with Vue Router - let it handle the routing
-          return;
-        }
-        
         // If path doesn't start with our base, redirect to base
-        window.location.href = basePath;
+        if (!path.startsWith(basePath)) {
+          window.location.href = basePath;
+        }
       }
       
       // Handle routing when page loads
       window.addEventListener('load', handleRouting);
-      
-      // Handle browser back/forward buttons
-      window.addEventListener('popstate', handleRouting);
-      
-      // Mark app as loaded after Vue Router initializes
-      setTimeout(() => {
-        window.appLoaded = true;
-      }, 3000);
     </script>
   </body>
 </html>
