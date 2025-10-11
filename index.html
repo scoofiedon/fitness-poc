@@ -18,6 +18,9 @@
         const path = window.location.pathname;
         const basePath = '/fitness-poc/';
         
+        // Only handle routing if the app is not already loaded
+        if (window.appLoaded) return;
+        
         // If we're at the root, redirect to the app
         if (path === '/' || path === basePath) {
           window.location.href = basePath;
@@ -39,6 +42,11 @@
       
       // Handle browser back/forward buttons
       window.addEventListener('popstate', handleRouting);
+      
+      // Mark app as loaded after Vue Router initializes
+      setTimeout(() => {
+        window.appLoaded = true;
+      }, 1000);
     </script>
   </body>
 </html>
