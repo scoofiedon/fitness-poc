@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import ExerciseList from '../views/ExerciseList.vue'
 import ExercisePage from '../views/ExercisePage.vue'
 
@@ -17,7 +17,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory('/fitness-poc/'),
+  history: createWebHashHistory('/fitness-poc/'),
   routes
 })
 
